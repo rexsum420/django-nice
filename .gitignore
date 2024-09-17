@@ -1,0 +1,4 @@
+venv/
+dist/
+build/
+django_nice.egg-info/
