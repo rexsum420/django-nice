@@ -2,9 +2,17 @@ from nicegui import ui
 import requests
 from .config import Config
 
-def bind_element_to_model(element, app_label, model_name, pk, field_name):
+def bind_element_to_model(element, app_label, model_name, pk, field_name, element_id):
     """
     Bind a NiceGUI element to a Django model field via SSE for real-time updates.
+    
+    Args:
+        element (ui.element): The NiceGUI element to bind.
+        app_label (str): The Django app label.
+        model_name (str): The Django model name.
+        pk (int): The primary key of the model instance.
+        field_name (str): The field name of the model to bind.
+        element_id (str): The unique id of the HTML element.
     """
     # Fetch the host and API endpoint from the configuration
     host = Config.get_host()
@@ -25,17 +33,21 @@ def bind_element_to_model(element, app_label, model_name, pk, field_name):
         if response.status_code == 200:
             print('Data updated successfully!')
 
-    # Bind the element to model updates via SSE
+    # Set the element's id and initial value
+    element.set_id(element_id)
     element.value = fetch_initial_data()
+    
+    # Bind the element to model updates via SSE
     element.on('update:modelValue', lambda e: update_data(e.args[0]))
 
-    # Inject JavaScript for listening to SSE
+    # Inject JavaScript for listening to SSE updates, finding the element by id
     sse_url = f'{host}{api_endpoint}/sse/{app_label}/{model_name}/{field_name}/'
     ui.html(f"""
     <script>
         const eventSource = new EventSource('{sse_url}');
         eventSource.onmessage = function(event) {{
-            document.querySelector('textarea').value = event.data;
+            document.getElementById('{element_id}').value = event.data;
         }};
     </script>
     """)
+
