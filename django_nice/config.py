@@ -39,7 +39,7 @@ class Config:
         urlpatterns += [
             # API endpoint to get or update the model's data
             path(f'api/{app_label}/{model_name}/<int:object_id>/<str:field_name>/', 
-                 ModelAPI.as_view(), name=f'{model_name}_detail'),
+                 ModelAPI.as_view(app_label, model_name), name=f'{model_name}_detail'),
 
             # SSE endpoint to stream updates of a specific field
             path(f'api/sse/{app_label}/{model_name}/{field_name}/', 
