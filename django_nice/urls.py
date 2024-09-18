@@ -10,7 +10,7 @@ def register_endpoints(app_label, model_name, field_name, object_id):
         # API endpoint for getting a specific field value from a model instance
         path(
             'api/<str:app_label>/<str:model_name>/<int:object_id>/<str:field_name>/', 
-            ModelAPI.as_view(), 
+            ModelAPI.as_view(app_label, model_name), 
             name=f'{model_name}_detail'
         ),
 
