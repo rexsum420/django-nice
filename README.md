@@ -8,17 +8,17 @@ When working with Django and NiceGUI, binding frontend elements directly to Djan
 
 `django-nice` solves these challenges by:
 
-1. Real-Time Sync with SSE: The library leverages Server-Sent Events (SSE) to keep the frontend NiceGUI elements in sync with the backend Django models in real-time. Whenever the backend data changes, the frontend is updated immediately without needing to refresh or manually poll.
+1. **Real-Time Sync with SSE**: The library leverages Server-Sent Events (SSE) to keep the frontend NiceGUI elements in sync with the backend Django models in real-time. Whenever the backend data changes, the frontend is updated immediately without needing to refresh or manually poll.
 
-2. Bidirectional Data Binding: The library allows changes in the frontend to automatically update the corresponding Django model, and vice versa. This ensures consistency between the client and the server.
+2. **Bidirectional Data Binding**: The library allows changes in the frontend to automatically update the corresponding Django model, and vice versa. This ensures consistency between the client and the server.
 
-3. REST API-Based Updates: It uses Django REST Framework (DRF) to expose model fields as API endpoints. This makes the process of updating the Django backend from the frontend smooth, without needing to implement complex form handling.
+3. **REST API-Based Updates**: It uses Django REST Framework (DRF) to expose model fields as API endpoints. This makes the process of updating the Django backend from the frontend smooth, without needing to implement complex form handling.
 
 ### Advantages Over Regular Django-NiceGUI Integration:
 
-- Real-Time Updates: Standard Django-NiceGUI integration doesn’t automatically sync data between the frontend and backend in real-time. `django-nice` provides automatic updates through SSE, allowing the frontend to reflect changes as soon as they happen in the backend.
-- Effortless Binding: Instead of manually writing JavaScript, forms, or custom API calls to keep frontend elements in sync with Django models, `django-nice` handles this for you with minimal configuration.
-- Improved User Experience: By offering real-time data updates, the library enhances the responsiveness of your NiceGUI app, creating a smoother and more interactive user experience.
+- **Real-Time Updates**: Standard Django-NiceGUI integration doesn’t automatically sync data between the frontend and backend in real-time. `django-nice` provides automatic updates through SSE, allowing the frontend to reflect changes as soon as they happen in the backend.
+- **Effortless Binding**: Instead of manually writing JavaScript, forms, or custom API calls to keep frontend elements in sync with Django models, `django-nice` handles this for you with minimal configuration.
+- **Improved User Experience**: By offering real-time data updates, the library enhances the responsiveness of your NiceGUI app, creating a smoother and more interactive user experience.
 
 ## Usage:
 
