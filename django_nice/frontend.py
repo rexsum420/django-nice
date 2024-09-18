@@ -34,7 +34,7 @@ def bind_element_to_model(element, app_label, model_name, pk, field_name, elemen
             print('Data updated successfully!')
 
     # Set the element's id and initial value
-    element.props(f'id={element_id}')
+    element.props(f'id={element_id}')  # Correctly set the id using props()
     element.value = fetch_initial_data()
     
     # Bind the element to model updates via SSE
@@ -42,7 +42,9 @@ def bind_element_to_model(element, app_label, model_name, pk, field_name, elemen
 
     # Inject JavaScript for listening to SSE updates, finding the element by id
     sse_url = f'{host}{api_endpoint}/sse/{app_label}/{model_name}/{field_name}/'
-    ui.html(f"""
+    
+    # Use ui.add_body_html to insert the <script> tag correctly
+    ui.add_body_html(f"""
     <script>
         const eventSource = new EventSource('{sse_url}');
         eventSource.onmessage = function(event) {{
@@ -50,4 +52,3 @@ def bind_element_to_model(element, app_label, model_name, pk, field_name, elemen
         }};
     </script>
     """)
-
