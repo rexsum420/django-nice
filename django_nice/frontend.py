@@ -20,7 +20,7 @@ def bind_element_to_model(element, app_label, model_name, pk, field_name, elemen
 
     # Fetch the initial data from Django
     def fetch_initial_data():
-        url = f'{host}{api_endpoint}/{app_label}/{model_name}/{pk}/'
+        url = f'{host}{api_endpoint}/{app_label}/{model_name}/{pk}/{field_name}/'
         response = requests.get(url)
         if response.status_code == 200:
             return response.json().get(field_name, '')

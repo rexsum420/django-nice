@@ -16,14 +16,13 @@ class SSEManager:
         Register a model for SSE updates when a specific field changes.
         """
         model = apps.get_model(app_label, model_name)
-
+        
         @receiver(post_save, sender=model)
         def model_update_handler(sender, instance, **kwargs):
-            if field_name in instance.get_dirty_fields():
-                new_value = getattr(instance, field_name)
-                if model_name in self.listeners:
-                    for listener in self.listeners[model_name]:
-                        listener(new_value)
+            new_value = getattr(instance, field_name)
+            if model_name in self.listeners:
+                for listener in self.listeners[model_name]:
+                    listener(new_value)
 
     def add_listener(self, model_name, listener):
         """
