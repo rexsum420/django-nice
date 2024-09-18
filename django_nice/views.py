@@ -20,6 +20,7 @@ class ModelAPI(View):
         except model.DoesNotExist:
             return JsonResponse({"error": "Object not found"}, status=404)
 
+
     def post(self, request, app_label, model_name, object_id):
         """
         Update the value of a specific model field.
