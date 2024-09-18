@@ -8,8 +8,7 @@ def register_endpoints(app_label, model_name, field_name, object_id):
     """
     return [
           # API endpoint for getting a specific field value from a model instance
-          path(f'api/{app_label}/{model_name}/<int:object_id>/<str:field_name>/', 
-               ModelAPI.as_view(), name=f'{model_name}_detail'),
+          path('api/<str:app_label>/<str:model_name>/<int:object_id>/<str:field_name>/', ModelAPI.as_view(), name=f'{model_name}_detail'),
 
           path(f'api/sse/{app_label}/{model_name}/{field_name}/', 
                lambda request, app_label=app_label, model_name=model_name, field_name=field_name: 
