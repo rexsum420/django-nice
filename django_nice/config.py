@@ -27,9 +27,9 @@ class Config:
         return cls._instance.api_endpoint
 
     @classmethod
-    def add_urls_to_project(cls, urlpatterns, app_label, model_name):
+    def add_urls_to_project(cls, urlpatterns, app_label, model_name, field_name, object_id):
         """
         Helper function to add the necessary API and SSE endpoints to the project's urls.py.
         """
         from .urls import register_endpoints
-        urlpatterns += register_endpoints(app_label, model_name)
+        urlpatterns += register_endpoints(app_label, model_name, field_name, object_id)

@@ -1,13 +1,15 @@
 from django.urls import path
-from .views import ModelUpdateAPIView
 from .sse import sse_manager
+from .views import ModelAPI
 
-def register_endpoints(app_label, model_name):
+def register_endpoints(app_label, model_name, field_name, object_id):
     """
-    Function to register the API and SSE endpoints for a specific model.
+    Register the API and SSE endpoints for the project.
     """
     return [
-        path(f'{app_label}/{model_name}/<int:pk>/', ModelUpdateAPIView.as_view(), name=f'{model_name}_update'),
-        path(f'{app_label}/{model_name}/<int:pk>/<str:field_name>/', ModelUpdateAPIView.as_view(), name=f'{model_name}_field_update'),
-        path(f'sse/{app_label}/{model_name}/<str:field_name>/', sse_manager.stream_updates, name=f'{model_name}_sse'),
+        # API endpoint for getting a specific field value from a model instance
+        path(f'api/{app_label}/{model_name}/{object_id}/', ModelAPI.as_view(), name=f'{model_name}_detail'),
+
+        # SSE endpoint for streaming updates of the field in a model instance
+        path(f'api/sse/{app_label}/{model_name}/{field_name}/', sse_manager.stream_updates, name=f'{model_name}_sse'),
     ]

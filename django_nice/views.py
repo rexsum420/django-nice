@@ -1,30 +1,31 @@
-from rest_framework.response import Response
-from rest_framework.views import APIView
+from django.http import JsonResponse
+from django.views import View
 from django.apps import apps
-from django.http import Http404
 
-class ModelUpdateAPIView(APIView):
-    """
-    A generic view to update any model via POST request.
-    Users will specify the app name, model name, and field they want to update.
-    """
-    def post(self, request, app_label, model_name, pk, field_name):
-        try:
-            # Get the model class dynamically based on app_label and model_name
-            model = apps.get_model(app_label, model_name)
-        except LookupError:
-            raise Http404("Model not found.")
+class ModelAPI(View):
+    def get(self, request, app_label, model_name, object_id):
+        """
+        Retrieve the value of a specific model field.
+        """
+        model = apps.get_model(app_label, model_name)
+        instance = model.objects.get(pk=object_id)
+        field_name = request.GET.get('field', None)
 
-        try:
-            instance = model.objects.get(pk=pk)
-        except model.DoesNotExist:
-            raise Http404("Instance not found.")
+        if field_name and hasattr(instance, field_name):
+            return JsonResponse({field_name: getattr(instance, field_name)})
+        return JsonResponse({'error': 'Field not found'}, status=404)
 
-        # Get the new value from the request data
-        new_value = request.data.get(field_name)
-        if new_value is not None:
-            setattr(instance, field_name, new_value)
+    def post(self, request, app_label, model_name, object_id):
+        """
+        Update the value of a specific model field.
+        """
+        model = apps.get_model(app_label, model_name)
+        instance = model.objects.get(pk=object_id)
+        field_name = request.GET.get('field', None)
+        field_value = request.POST.get(field_name)
+
+        if field_name and hasattr(instance, field_name):
+            setattr(instance, field_name, field_value)
             instance.save()
-            return Response({field_name: new_value})
-        else:
-            return Response({"error": f"Field '{field_name}' not found in request."}, status=400)
+            return JsonResponse({field_name: getattr(instance, field_name)})
+        return JsonResponse({'error': 'Field not found or invalid data'}, status=400)
