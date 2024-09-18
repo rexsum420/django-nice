@@ -8,7 +8,7 @@ When working with Django and NiceGUI, binding frontend elements directly to Djan
 
 `django-nice` solves these challenges by:
 
-1. **Real-Time Sync with SSE**: The library leverages Server-Sent Events (SSE) to keep the frontend NiceGUI elements in sync with the backend Django models in real-time. Whenever the backend data changes, the frontend is updated immediately without needing to refresh or manually poll.
+1. **Real-Time Sync with SSE**: The library leverages **Server-Sent Events (SSE)** to keep the frontend NiceGUI elements in sync with the backend Django models in real-time. Whenever the backend data changes, the frontend is updated immediately without needing to refresh or manually poll.
 
 2. **Bidirectional Data Binding**: The library allows changes in the frontend to automatically update the corresponding Django model, and vice versa. This ensures consistency between the client and the server.
 
