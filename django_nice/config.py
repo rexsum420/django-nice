@@ -1,6 +1,7 @@
 from django.urls import path
-from .views import ModelAPI, sse_manager
+from .views import ModelAPI
 from functools import partial
+from .sse import sse_manager
 
 class Config:
     _instance = None
