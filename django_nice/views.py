@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from django.views import View
 from django.apps import apps
-
+from .sse import sse_manager
 class ModelAPI(View):
     def get(self, request, app_label, model_name, object_id, field_name):
         # Fetch the model dynamically
