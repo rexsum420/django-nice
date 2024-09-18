@@ -15,8 +15,8 @@ class Config:
         Configure the base URL (host) and API endpoint for the library.
         """
         config = cls._instance or cls()
-        config.host = host.rstrip('/')  # Ensure no trailing slash
-        config.api_endpoint = api_endpoint.rstrip('/')  # Ensure no trailing slash
+        config.host = host.rstrip('/')  
+        config.api_endpoint = api_endpoint.rstrip('/') 
 
     @classmethod
     def get_host(cls):

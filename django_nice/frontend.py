@@ -34,7 +34,7 @@ def bind_element_to_model(element, app_label, model_name, pk, field_name, elemen
             print('Data updated successfully!')
 
     # Set the element's id and initial value
-    element.set_id(element_id)
+    element.props(f'id={element_id}')
     element.value = fetch_initial_data()
     
     # Bind the element to model updates via SSE
