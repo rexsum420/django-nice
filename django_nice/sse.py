@@ -47,9 +47,8 @@ class SSEManager:
                 if new_value != last_value:
                     last_value = new_value
                     yield f"data: {new_value}\n\n"
-        
-        return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
 
+        return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
 
 # Singleton instance of SSEManager
 sse_manager = SSEManager()

@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import ModelAPI, sse_manager
+from functools import partial
 
 class Config:
     _instance = None
@@ -41,5 +42,6 @@ class Config:
 
             # SSE endpoint to stream updates of a specific field
             path(f'api/sse/{app_label}/{model_name}/{field_name}/', 
-                 sse_manager.stream_updates(app_label=app_label, model_name=model_name, field_name=field_name), name=f'{model_name}_sse'),
+                 partial(sse_manager.stream_updates, app_label=app_label, model_name=model_name, field_name=field_name), 
+                 name=f'{model_name}_sse'),
         ]
