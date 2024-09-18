@@ -1,9 +1,14 @@
 from django.http import JsonResponse
 from django.views import View
 from django.apps import apps
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ModelAPI(View):
     def get(self, request, app_label, model_name, object_id, field_name):
+        logger.debug(f"Received app_label={app_label}, model_name={model_name}, object_id={object_id}, field_name={field_name}")
+        print(f"Received app_label={app_label}, model_name={model_name}, object_id={object_id}, field_name={field_name}")
         # Fetch the model dynamically
         model = apps.get_model(app_label, model_name)
         try:
