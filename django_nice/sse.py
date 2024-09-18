@@ -33,7 +33,7 @@ class SSEManager:
             self.listeners[model_name] = []
         self.listeners[model_name].append(listener)
 
-    def stream_updates(self, request, app_label, model_name, field_name):
+    def stream_updates(self, app_label, model_name, field_name):
         def event_stream():
             model = apps.get_model(app_label, model_name)
             last_value = None
