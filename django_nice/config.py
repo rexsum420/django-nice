@@ -1,3 +1,6 @@
+from django.urls import path
+from .views import ModelAPI, sse_manager
+
 class Config:
     _instance = None
 
@@ -29,7 +32,14 @@ class Config:
     @classmethod
     def add_urls_to_project(cls, urlpatterns, app_label, model_name, field_name, object_id):
         """
-        Helper function to add the necessary API and SSE endpoints to the project's urls.py.
+        Add API and SSE endpoints for the model.
         """
-        from .urls import register_endpoints
-        urlpatterns += register_endpoints(app_label, model_name, field_name, object_id)
+        urlpatterns += [
+            # API endpoint to get or update the model's data
+            path(f'api/{app_label}/{model_name}/<int:object_id>/<str:field_name>/', 
+                 ModelAPI.as_view(), name=f'{model_name}_detail'),
+
+            # SSE endpoint to stream updates of a specific field
+            path(f'api/sse/{app_label}/{model_name}/{field_name}/', 
+                 sse_manager.stream_updates, name=f'{model_name}_sse'),
+        ]

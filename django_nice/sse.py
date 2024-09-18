@@ -34,27 +34,23 @@ class SSEManager:
         self.listeners[model_name].append(listener)
 
     def stream_updates(self, request, app_label, model_name, field_name):
-        """
-        Stream updates via Server-Sent Events (SSE) for a specific model field.
-        """
         def event_stream():
             model = apps.get_model(app_label, model_name)
             last_value = None
 
-            # Get the first instance of the model (or adjust this to meet your requirements)
             instance = model.objects.first()
             if instance:
                 last_value = getattr(instance, field_name)
                 yield f"data: {last_value}\n\n"
 
             while True:
-                # Continuously check for changes
                 new_value = getattr(model.objects.first(), field_name, None)
                 if new_value != last_value:
                     last_value = new_value
                     yield f"data: {new_value}\n\n"
         
         return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+
 
 # Singleton instance of SSEManager
 sse_manager = SSEManager()
