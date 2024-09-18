@@ -28,24 +28,29 @@ To get started, follow these steps:
 
 Add the following to your `settings.py` file to configure the API endpoint:
 
+```python
 from django_nice.config import Config
 
 # Configure the base URL (host) for the API
 Config.configure(host='http://your-production-server.com', api_endpoint='/api')
+```
 
 ### 2. Register API and SSE Endpoints in urls.py:
 
 In your project's `urls.py` file, add the necessary API and SSE endpoints:
 
+```python
 from django_nice.config import Config
 
 # Register API and SSE endpoints for a model (e.g., Data model in app 'myapp')
 Config.add_urls_to_project(urlpatterns, app_label='myapp', model_name='Data')
+```
 
 ### 3. Bind Frontend Elements to Django Models:
 
 Inside your NiceGUI components, bind frontend elements (like text areas) to Django model fields for real-time updates:
 
+```python
 from nicegui import ui
 from django_nice.frontend import bind_element_to_model
 
@@ -55,6 +60,7 @@ def index():
     bind_element_to_model(textarea, app_label='myapp', model_name='Data', pk=1, field_name='data_to_display')
 
 ui.run()
+```
 
 This example shows how to bind a NiceGUI `textarea` element to a Django model field, ensuring real-time synchronization between the frontend and backend. When the Django model changes, the `textarea` is updated automatically, and any changes made in the `textarea` are sent to the backend immediately.
 
