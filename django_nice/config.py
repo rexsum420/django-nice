@@ -1,8 +1,7 @@
 from .urls import register_endpoints
-from .signals import model_update_signal
+from .signals import model_update_signal, setup_signals
 from django.apps import apps
 from django.db.models.signals import post_save
-from .signals import setup_signals
 
 def register_signals_dynamically(app_label, model_name):
     for app in apps.get_app_configs():

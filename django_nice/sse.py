@@ -1,4 +1,6 @@
 from django.http import StreamingHttpResponse
+from collections import deque
+import time
 
 class SSEManager:
     _listeners = {}
@@ -10,17 +12,18 @@ class SSEManager:
         if object_id not in cls._listeners[model_name]:
             cls._listeners[model_name][object_id] = {}
         if field_name not in cls._listeners[model_name][object_id]:
-            cls._listeners[model_name][object_id][field_name] = []
+            cls._listeners[model_name][object_id][field_name] = deque()  # Using a deque as the update queue
         return cls._listeners[model_name][object_id][field_name]
 
     @classmethod
     def notify_listeners(cls, model_name, object_id, field_name, new_value):
-        listeners = cls._listeners.get(model_name, {}).get(object_id, {}).get(field_name, [])
-        for listener in listeners:
-            listener(new_value)
+        listeners = cls._listeners.get(model_name, {}).get(object_id, {}).get(field_name, deque())
+        print(f"Notifying {len(listeners)} listeners for {model_name} {object_id} {field_name} with new value {new_value}")
+        listeners.append(new_value)  # Append the new value to the deque for all listeners
 
     @classmethod
     def stream_updates(cls, request, app_label, model_name, object_id, field_name):
+        # Event stream function to yield events to the client
         def event_stream():
             listeners = cls.register_listener(model_name, object_id, field_name)
 
@@ -32,22 +35,27 @@ class SSEManager:
             except model.DoesNotExist:
                 last_value = None
 
-            def send_update(new_value):
-                nonlocal last_value
-                if new_value != last_value:
-                    last_value = new_value
-                    yield f"data: {new_value}\n\n"
+            # Send the initial value if it exists
+            if last_value is not None:
+                yield f"data: {last_value}\n\n"
 
-            listeners.append(lambda new_value: send_update(new_value))
-
-            yield from send_update(last_value)
-
+            # Continuously yield updates from the deque
             try:
                 while True:
-                    if request.META.get('HTTP_CONNECTION', '').lower() == 'close':
-                        break
+                    if listeners:
+                        try:
+                            new_value = listeners.popleft()  # Fetch the new value
+                            
+                            print(f"Sending SSE update: {new_value}")
+                            yield f"data: {new_value}\n\n"
+                        except IndexError:
+                            pass  # No update available, keep the connection open
+                    yield ":\n\n"  # Send keep-alive to prevent timeout
+                    time.sleep(1)  # Avoid busy waiting
             except GeneratorExit:
-                listeners.remove(lambda new_value: send_update(new_value))
+                # Client disconnected, clear the deque
+                print(f"Removing listener for {model_name} {object_id} {field_name}")
+                cls._listeners[model_name][object_id][field_name].clear()
                 raise
 
         return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
