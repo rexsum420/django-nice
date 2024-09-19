@@ -35,3 +35,5 @@ class SSEManager:
             yield from send_update(last_value)
 
         return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+
+sse_manager = SSEManager()

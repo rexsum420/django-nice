@@ -1,8 +1,4 @@
-from django.urls import path
-from .views import ModelAPI
-from functools import partial
-from .sse import sse_manager
-from urls import register_endpoints
+from .urls import register_endpoints
 
 class Config:
     _instance = None
@@ -31,4 +27,4 @@ class Config:
 
     @classmethod
     def add_urls_to_project(cls, urlpatterns, app_label, model_name, field_name, object_id):
-        urlpatterns += register_endpoints(app_label, model_name, field_name)
+        urlpatterns += register_endpoints(app_label, model_name, field_name, object_id)

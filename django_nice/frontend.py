@@ -27,7 +27,7 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
     element.on('update:modelValue', lambda e: update_data(e.args[0]))
 
     # Inject JavaScript to listen to SSE updates
-    sse_url = f'{host}{api_endpoint}/sse/{app_label}/{model_name}/{field_name}/'
+    sse_url = f'{host}{api_endpoint}/sse/{app_label}/{model_name}/{object_id}/{field_name}/'
     ui.add_body_html(f"""
     <script>
         const eventSource = new EventSource('{sse_url}');

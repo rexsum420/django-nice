@@ -16,7 +16,7 @@ def register_endpoints(app_label, model_name, field_name, object_id):
 
         # SSE endpoint for streaming updates of the field in a model instance
         path(
-            f'api/sse/{app_label}/{model_name}/{field_name}/',
+            f'api/sse/{app_label}/{model_name}/{object_id}/{field_name}/',
             lambda request, app_label=app_label, model_name=model_name, field_name=field_name:
             sse_manager.stream_updates(request, app_label, model_name, field_name),
             name=f'{model_name}_sse'
