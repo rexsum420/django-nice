@@ -24,7 +24,7 @@ class ModelAPI(View):
         field_value = request.POST.get(field_name)
 
         if field_name and hasattr(instance, field_name):
-            setattr(instance, field_value)
+            setattr(instance, field_name, field_value)
             instance.save()
             return JsonResponse({field_name: getattr(instance, field_name)})
         return JsonResponse({'error': 'Field not found or invalid data'}, status=400)
