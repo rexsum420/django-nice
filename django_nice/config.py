@@ -2,6 +2,7 @@ from django.urls import path
 from .views import ModelAPI
 from functools import partial
 from .sse import sse_manager
+from urls import register_endpoints
 
 class Config:
     _instance = None
@@ -16,9 +17,6 @@ class Config:
 
     @classmethod
     def configure(cls, host, api_endpoint='/api'):
-        """
-        Configure the base URL (host) and API endpoint for the library.
-        """
         config = cls._instance or cls()
         config.host = host.rstrip('/')  
         config.api_endpoint = api_endpoint.rstrip('/') 
@@ -33,16 +31,4 @@ class Config:
 
     @classmethod
     def add_urls_to_project(cls, urlpatterns, app_label, model_name, field_name, object_id):
-        """
-        Add API and SSE endpoints for the model.
-        """
-        urlpatterns += [
-            # API endpoint to get or update the model's data
-            path(f'api/{app_label}/{model_name}/<int:object_id>/<str:field_name>/', 
-                 ModelAPI.as_view(), name=f'{model_name}_detail'),
-
-            # SSE endpoint to stream updates of a specific field
-            path(f'api/sse/{app_label}/{model_name}/{field_name}/', 
-                 partial(sse_manager.stream_updates, app_label=app_label, model_name=model_name, field_name=field_name), 
-                 name=f'{model_name}_sse'),
-        ]
+        urlpatterns += register_endpoints(app_label, model_name, field_name)

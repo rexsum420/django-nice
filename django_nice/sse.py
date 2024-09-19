@@ -1,54 +1,37 @@
 from django.http import StreamingHttpResponse
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.apps import apps
 
 class SSEManager:
-    """
-    A class to manage SSE updates for any model and field.
-    """
+    _listeners = {}
 
-    def __init__(self):
-        self.listeners = {}
+    @classmethod
+    def register_listener(cls, model_name, object_id, field_name):
+        if model_name not in cls._listeners:
+            cls._listeners[model_name] = {}
+        if object_id not in cls._listeners[model_name]:
+            cls._listeners[model_name][object_id] = {}
+        if field_name not in cls._listeners[model_name][object_id]:
+            cls._listeners[model_name][object_id][field_name] = []
+        return cls._listeners[model_name][object_id][field_name]
 
-    def register_model(self, app_label, model_name, field_name):
-        """
-        Register a model for SSE updates when a specific field changes.
-        """
-        model = apps.get_model(app_label, model_name)
-        
-        @receiver(post_save, sender=model)
-        def model_update_handler(sender, instance, **kwargs):
-            new_value = getattr(instance, field_name)
-            if model_name in self.listeners:
-                for listener in self.listeners[model_name]:
-                    listener(new_value)
+    @classmethod
+    def notify_listeners(cls, model_name, object_id, field_name, new_value):
+        listeners = cls._listeners.get(model_name, {}).get(object_id, {}).get(field_name, [])
+        for listener in listeners:
+            listener(new_value)
 
-    def add_listener(self, model_name, listener):
-        """
-        Add a listener for a model. The listener will be called when an SSE event occurs.
-        """
-        if model_name not in self.listeners:
-            self.listeners[model_name] = []
-        self.listeners[model_name].append(listener)
-
-    def stream_updates(self, request, app_label, model_name, field_name):
+    @classmethod
+    def stream_updates(cls, request, model_name, object_id, field_name):
         def event_stream():
-            model = apps.get_model(app_label, model_name)
+            listeners = cls.register_listener(model_name, object_id, field_name)
             last_value = None
 
-            instance = model.objects.first()
-            if instance:
-                last_value = getattr(instance, field_name)
-                yield f"data: {last_value}\n\n"
-
-            while True:
-                new_value = getattr(model.objects.first(), field_name, None)
+            def send_update(new_value):
+                nonlocal last_value
                 if new_value != last_value:
                     last_value = new_value
                     yield f"data: {new_value}\n\n"
+            
+            listeners.append(send_update)
+            yield from send_update(last_value)
 
         return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
-
-# Singleton instance of SSEManager
-sse_manager = SSEManager()

@@ -1,26 +1,14 @@
 from nicegui import ui
 import requests
-from .config import Config
+from .config import Config 
 
-def bind_element_to_model(element, app_label, model_name, pk, field_name, element_id):
-    """
-    Bind a NiceGUI element to a Django model field via SSE for real-time updates.
-    
-    Args:
-        element (ui.element): The NiceGUI element to bind.
-        app_label (str): The Django app label.
-        model_name (str): The Django model name.
-        pk (int): The primary key of the model instance.
-        field_name (str): The field name of the model to bind.
-        element_id (str): The unique id of the HTML element.
-    """
-    # Fetch the host and API endpoint from the configuration
+def bind_element_to_model(element, app_label, model_name, object_id, field_name, element_id):
     host = Config.get_host()
     api_endpoint = Config.get_api_endpoint()
 
-    # Fetch the initial data from Django
+    # Fetch initial data from the model
     def fetch_initial_data():
-        url = f'{host}{api_endpoint}/{app_label}/{model_name}/{pk}/{field_name}/'
+        url = f'{host}{api_endpoint}/{app_label}/{model_name}/{object_id}/'
         response = requests.get(url)
         if response.status_code == 200:
             return response.json().get(field_name, '')
@@ -28,22 +16,18 @@ def bind_element_to_model(element, app_label, model_name, pk, field_name, elemen
 
     # Update the model when the value changes in the frontend
     def update_data(value):
-        url = f'{host}{api_endpoint}/{app_label}/{model_name}/{pk}/{field_name}/'
-        response = requests.post(url, json={field_name: value})
-        if response.status_code == 200:
-            print('Data updated successfully!')
+        url = f'{host}{api_endpoint}/{app_label}/{model_name}/{object_id}/{field_name}/'
+        requests.post(url, json={field_name: value})
 
-    # Set the element's id and initial value
-    element.props(f'id={element_id}')  # Correctly set the id using props()
+    # Set the element's initial value
+    element.props(f'id={element_id}')
     element.value = fetch_initial_data()
-    
+
     # Bind the element to model updates via SSE
     element.on('update:modelValue', lambda e: update_data(e.args[0]))
 
-    # Inject JavaScript for listening to SSE updates, finding the element by id
+    # Inject JavaScript to listen to SSE updates
     sse_url = f'{host}{api_endpoint}/sse/{app_label}/{model_name}/{field_name}/'
-    
-    # Use ui.add_body_html to insert the <script> tag correctly
     ui.add_body_html(f"""
     <script>
         const eventSource = new EventSource('{sse_url}');
