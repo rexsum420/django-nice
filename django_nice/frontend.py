@@ -1,12 +1,11 @@
 from nicegui import ui
 import requests
-from .config import Config 
+from .config import Config
 
-def bind_element_to_model(element, app_label, model_name, object_id, field_name, element_id):
+def bind_element_to_model(element, app_label, model_name, object_id, field_name, element_id, property_name='value'):
     host = Config.get_host()
     api_endpoint = Config.get_api_endpoint()
 
-    # Fetch initial data from the model
     def fetch_initial_data():
         url = f'{host}{api_endpoint}/{app_label}/{model_name}/{object_id}/{field_name}'
         response = requests.get(url)
@@ -14,7 +13,6 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
             return response.json().get(field_name, '')
         return ''
 
-    # Update the model when the value changes in the frontend
     def update_data(value):
         if value is None or value == '':
             print("Error: Value is empty or None")
@@ -23,20 +21,25 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
             response = requests.post(url, json={field_name: value})
             print(f"Sent value: {value}, Response: {response.status_code}")
 
-    # Set the element's initial value and bind the value between frontend and backend
-    element.value = fetch_initial_data()
+    setattr(element, property_name, fetch_initial_data())
 
-    # Bind the element's value to backend model changes
+    if isinstance(element, ui.input):
+        listener_event = 'update:model-value'
+    elif isinstance(element, ui.checkbox):
+        listener_event = 'update:model-checked'
+    elif isinstance(element, ui.slider):
+        listener_event = 'update:model-value'
+    elif isinstance(element, ui.button):
+        listener_event = 'click'
+    else:
+        listener_event = f'update:model-{property_name}'
+
     def on_frontend_change(e):
-        new_value=''
-        for arg in e.args:
-            new_value += arg
-        update_data(new_value)  # Send updated value to the backend
+        new_value = ''.join(e.args)
+        update_data(new_value)
 
-    # Use the appropriate event listener for this specific element
-    element.on('update:model-value', on_frontend_change) 
+    element.on(listener_event, on_frontend_change)
 
-    # Inject JavaScript to listen to SSE updates and update the element's value
     sse_url = f'{host}{api_endpoint}/sse/{app_label}/{model_name}/{object_id}/{field_name}/'
     ui.add_body_html(f"""
         <script>
@@ -45,10 +48,10 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
             eventSource.onmessage = function(event) {{
                 const newValue = event.data;
 
-                // Update the NiceGUI element directly via the framework
+                // Update the NiceGUI element dynamically via the framework
                 const element = nicegui.elements['{element_id}'];
                 if (element) {{
-                    element.value = newValue;
+                    element['{property_name}'] = newValue;
                 }}
             }};
 
@@ -61,5 +64,4 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
         </script>
     """)
 
-    # Add ID to the element for proper access from the injected JavaScript
     element.props(f'id={element_id}')

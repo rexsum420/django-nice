@@ -22,8 +22,6 @@ class ModelAPI(View):
     def post(self, request, app_label, model_name, object_id, field_name):
         model = apps.get_model(app_label, model_name)
         instance = model.objects.get(pk=object_id)
-        
-        # Parse the incoming JSON data
         try:
             data = json.loads(request.body)
             field_value = data.get(field_name)
