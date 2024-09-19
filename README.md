@@ -24,18 +24,7 @@ When working with Django and NiceGUI, binding frontend elements directly to Djan
 
 To get started, follow these steps:
 
-### 1. Configure the Base URL in settings.py:
-
-Add the following to your `settings.py` file to configure the API endpoint:
-
-```python
-from django_nice.config import Config
-
-# Configure the base URL (host) for the API
-Config.configure(host='http://your-production-server.com', api_endpoint='/api')
-```
-
-### 2. Register API and SSE Endpoints in urls.py:
+### 1. Register API and SSE Endpoints in urls.py:
 
 In your project's `urls.py` file, add the necessary API and SSE endpoints:
 
@@ -43,26 +32,43 @@ In your project's `urls.py` file, add the necessary API and SSE endpoints:
 from django_nice.config import Config
 
 # Register API and SSE endpoints for a model (e.g., Data model in app 'myapp')
-Config.add_urls_to_project(urlpatterns, app_label='myapp', model_name='Data')
+Config.add_urls_to_project(
+    urlpatterns, 
+    app_label='myapp', 
+    model_name='DataModel', 
+    field_name='data_to_display', 
+    object_id=1
+)
 ```
 
-### 3. Bind Frontend Elements to Django Models:
+### 2. Bind Frontend Elements to Django Models:
 
 Inside your NiceGUI components, bind frontend elements (like text areas) to Django model fields for real-time updates:
 
 ```python
 from nicegui import ui
 from django_nice.frontend import bind_element_to_model
+from django_nice.config import Config
+
+Config.configure(host='http://127.0.0.1:8000', api_endpoint='/api')
 
 @ui.page('/')
 def index():
-    textarea = ui.textarea('This is data that is bound to the django model').classes('w-full')
-    bind_element_to_model(textarea, app_label='myapp', model_name='Data', pk=1, field_name='data_to_display')
+    inputbox = ui.input('').style('width: 25%')
+    bind_element_to_model(inputbox, app_label='myapp', model_name='DataModel', object_id=1, field_name='data_to_display', element_id='bound_input')
 
-ui.run()
+ui.run(host='127.0.0.1', port=8080)
 ```
 
-This example shows how to bind a NiceGUI `textarea` element to a Django model field, ensuring real-time synchronization between the frontend and backend. When the Django model changes, the `textarea` is updated automatically, and any changes made in the `textarea` are sent to the backend immediately.
+This example shows how to bind a NiceGUI `input` element to a Django model field, ensuring real-time synchronization between the frontend and backend. When the Django model changes, the `input` is updated automatically, and any changes made in the `input` are sent to the backend immediately.
+
+Defining a property of the element is also possible but optional. here's how you would set the content property of a markdown element:
+
+```python
+    markdown = ui.markdown().styles('background-color:black;color:white')
+    bind_element_to_model(markdown, app_label='myapp', model_name='DataModel', pk=1, field_name='data_to_display')
+```
+
 
 ## Installation:
 
