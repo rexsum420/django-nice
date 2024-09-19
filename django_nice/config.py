@@ -1,5 +1,7 @@
 from .urls import register_endpoints
-
+from .signals import model_update_signal
+from django.apps import apps
+from django.db.models.signals import post_save
 class Config:
     _instance = None
 
@@ -27,4 +29,11 @@ class Config:
 
     @classmethod
     def add_urls_to_project(cls, urlpatterns, app_label, model_name, field_name, object_id):
-        urlpatterns += register_endpoints(app_label, model_name, field_name, object_id)
+        try:
+            api_endpoint = cls._instance.get_api_endpoint()
+        except:
+            api_endpoint = 'api'
+        model = apps.get_model(app_label, model_name)
+        post_save.connect(model_update_signal, sender=model)
+        urlpatterns += register_endpoints(app_label, model_name, field_name, object_id, api_endpoint)
+        
