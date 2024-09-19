@@ -51,5 +51,3 @@ class SSEManager:
                 raise
 
         return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
-
-sse_manager = SSEManager()

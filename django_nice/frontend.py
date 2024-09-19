@@ -15,11 +15,10 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
 
     def update_data(value):
         if value is None or value == '':
-            print("Error: Value is empty or None")
+            pass
         else:
             url = f'{host}{api_endpoint}/{app_label}/{model_name}/{object_id}/{field_name}/'
             response = requests.post(url, json={field_name: value})
-            print(f"Sent value: {value}, Response: {response.status_code}")
 
     setattr(element, property_name, fetch_initial_data())
 
@@ -36,10 +35,11 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
 
     def on_frontend_change(e):
         new_value = ''.join(e.args)
-        update_data(new_value)
+        update_data(new_value) 
 
     element.on(listener_event, on_frontend_change)
 
+    element.props(f'id={element_id}')
     sse_url = f'{host}{api_endpoint}/sse/{app_label}/{model_name}/{object_id}/{field_name}/'
     ui.add_body_html(f"""
         <script>
@@ -48,10 +48,10 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
             eventSource.onmessage = function(event) {{
                 const newValue = event.data;
 
-                // Update the NiceGUI element dynamically via the framework
+                // Update the NiceGUI element dynamically via the framework using set_value
                 const element = nicegui.elements['{element_id}'];
                 if (element) {{
-                    element['{property_name}'] = newValue;
+                    element.set_value(newValue);  // Use NiceGUI's set_value method
                 }}
             }};
 
@@ -63,5 +63,3 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
             }});
         </script>
     """)
-
-    element.props(f'id={element_id}')
