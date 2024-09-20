@@ -55,7 +55,14 @@ Config.configure(host='http://127.0.0.1:8000', api_endpoint='/api')
 @ui.page('/')
 def index():
     inputbox = ui.input('').style('width: 25%')
-    bind_element_to_model(inputbox, app_label='myapp', model_name='DataModel', object_id=1, field_name='data_to_display', element_id='bound_input')
+    bind_element_to_model(
+        inputbox,
+        app_label='myapp',
+        model_name='DataModel',
+        object_id=1,
+        field_name='data_to_display',
+        element_id='bound_input'
+    )
 
 ui.run(host='127.0.0.1', port=8080)
 ```
@@ -66,9 +73,16 @@ Defining a property of the element is also possible but optional. here's how you
 
 ```python
     markdown = ui.markdown().styles('background-color:black;color:white')
-    bind_element_to_model(markdown, app_label='myapp', model_name='DataModel', pk=1, field_name='data_to_display')
+    bind_element_to_model(
+        markdown,
+        app_label='myapp',
+        model_name='DataModel',
+        pk=1,
+        field_name='data_to_display'
+        element_id='bound_markdown',
+        property_name='content'
+    )
 ```
-
 
 ## Installation:
 
