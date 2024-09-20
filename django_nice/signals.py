@@ -10,7 +10,6 @@ def model_update_signal(sender, instance, **kwargs):
         new_value = getattr(instance, field_name, None)
 
         if new_value is not None:
-            print(f"Notifying listeners for {sender.__name__} {instance.pk} {field_name} = {new_value}")
             SSEManager.notify_listeners(sender.__name__, instance.pk, field_name, new_value)
 
 

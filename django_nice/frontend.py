@@ -1,12 +1,73 @@
 from nicegui import ui
 import requests
 from .config import Config
+from django.apps import apps
+from django.db import models
 
 def bind_element_to_model(element, app_label, model_name, object_id, field_name, element_id, property_name='value'):
     host = Config.get_host()
     api_endpoint = Config.get_api_endpoint()
+    model = apps.get_model(app_label, model_name)
+    field = model._meta.get_field(field_name)
+    
+    # Getting ready to add input validation
+    
+    # input_validation_js = ""
+    
+    # if isinstance(field, models.IntegerField):
+    #     input_validation_js = f"""
+    #     const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
+    #     element.addEventListener("input", function(event) {{
+    #         let value = event.target.value;
+    #         event.target.value = value.replace(/[^-0-9]/g, '');  // Allow integers, including negative
+    #     }});
+    #     """
+    # elif isinstance(field, (models.DecimalField, models.FloatField)):
+    #     input_validation_js = f"""
+    #     const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
+    #     element.addEventListener("input", function(event) {{
+    #         let value = event.target.value;
+    #         event.target.value = value.replace(/[^-0-9.]/g, '');  // Allow decimal numbers
+    #     }});
+    #     """
+    # elif isinstance(field, models.BooleanField):
+    #     input_validation_js = ""
+    # elif isinstance(field, models.EmailField):
+    #     input_validation_js = f"""
+    #     const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
+    #     element.addEventListener("input", function(event) {{
+    #         let value = event.target.value;
+    #         if (!value.match(/^[\\w.-]+@[\\w.-]+\\.[A-Za-z]+$/)) {{
+    #             event.target.setCustomValidity("Invalid email format");
+    #         }} else {{
+    #             event.target.setCustomValidity("");
+    #         }}
+    #     }});
+    #     """
+    # elif isinstance(field, models.TextField):
+    #     max_length = field.max_length if field.max_length else 10000
+    #     input_validation_js = f"""
+    #     document.querySelector("#{element_id}").maxLength = {max_length};
+    #     """
+    # elif isinstance(field, (models.PositiveIntegerField, models.PositiveBigIntegerField)):
+    #     input_validation_js = f"""
+    #     const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
+    #     element.addEventListener("input", function(event) {{
+    #         let value = event.target.value;
+    #         if (value && (isNaN(value) || value < 0)) {{
+    #             event.target.value = value.replace(/[^0-9]/g, '');  // Only allow positive integers
+    #         }}
+    #     }});
+    #     """
+    # elif isinstance(field, models.CharField):
+    #     max_length = field.max_length
+    #     input_validation_js = f"""
+    #     const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
+    #     element.maxLength = {max_length};
+    #     """
+    # elif isinstance(field, models.BinaryField):
+    #     input_validation_js = ""
 
-    # Fetch initial data from the model
     def fetch_initial_data():
         url = f'{host}{api_endpoint}/{app_label}/{model_name}/{object_id}/{field_name}'
         response = requests.get(url)
@@ -14,7 +75,6 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
             return response.json().get(field_name, '')
         return ''
 
-    # Update the model when the value changes in the frontend
     def update_data(value):
         if value is None or value == '':
             pass
@@ -22,10 +82,8 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
             url = f'{host}{api_endpoint}/{app_label}/{model_name}/{object_id}/{field_name}/'
             response = requests.post(url, json={field_name: value})
 
-    # Set the element's initial value and bind the value between frontend and backend
     setattr(element, property_name, fetch_initial_data())
 
-    # Determine the appropriate event listener based on the element type
     if isinstance(element, ui.input):
         listener_event = 'update:model-value'
         element_tag = 'input'
@@ -45,22 +103,17 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
         listener_event = f'update:model-{property_name}'
         element_tag = '*'
 
-    # Bind the element's value to backend model changes
     def on_frontend_change(e):
         new_value = ''.join(e.args)
         update_data(new_value)
 
-    # Define the event listener for the frontend change
     element.on(listener_event, on_frontend_change)
     
-    # Add a class to the element and an id for targeting via JavaScript
     element.props(f'class=model-element-class id={element_id}')
 
-    # Define a callback that can be used in the injected JavaScript
     def set_value_in_element(new_value):
         element.set_value(new_value)
 
-    # Inject JavaScript to listen to SSE updates and update the input element within the label
     sse_url = f'{host}{api_endpoint}/sse/{app_label}/{model_name}/{object_id}/{field_name}/'
     ui.add_body_html(f"""
         <script>
@@ -69,22 +122,16 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
 
                 eventSource.onmessage = function(event) {{
                     const newValue = event.data;
-                    console.log("Received new message from SSE:", newValue);
-
-                    // Find the element of type {element_tag} with class 'model-element-class' and id '{element_id}'
                     const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]');
 
                     if (element) {{
-                        // Determine how to set the value based on element type
                         if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.tagName === 'SELECT') {{
-                            element.value = newValue;  // Update value for input-like elements
+                            element.value = newValue;
                         }} else if (element.tagName === 'BUTTON') {{
-                            // You might want to update button text or trigger other effects
                             element.textContent = newValue;
                         }} else {{
-                            element.textContent = newValue;  // Update content for other elements
+                            element.textContent = newValue;
                         }}
-                        console.log("Updated element with ID:", '{element_id}', "to new value:", newValue);
                     }} else {{
                         console.error("Element with ID", '{element_id}', "not found in the class list.");
                     }}
@@ -94,7 +141,6 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
                     console.error("SSE connection error:", error);
                 }};
 
-                // Cleanup: Close the EventSource connection when the page is closed or navigated away from
                 window.addEventListener('beforeunload', function() {{
                     if (eventSource) {{
                         eventSource.close();
