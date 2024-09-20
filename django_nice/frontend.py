@@ -12,61 +12,61 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
     
     # Getting ready to add input validation
     
-    # input_validation_js = ""
+    input_validation_js = ""
     
-    # if isinstance(field, models.IntegerField):
-    #     input_validation_js = f"""
-    #     const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
-    #     element.addEventListener("input", function(event) {{
-    #         let value = event.target.value;
-    #         event.target.value = value.replace(/[^-0-9]/g, '');  // Allow integers, including negative
-    #     }});
-    #     """
-    # elif isinstance(field, (models.DecimalField, models.FloatField)):
-    #     input_validation_js = f"""
-    #     const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
-    #     element.addEventListener("input", function(event) {{
-    #         let value = event.target.value;
-    #         event.target.value = value.replace(/[^-0-9.]/g, '');  // Allow decimal numbers
-    #     }});
-    #     """
-    # elif isinstance(field, models.BooleanField):
-    #     input_validation_js = ""
-    # elif isinstance(field, models.EmailField):
-    #     input_validation_js = f"""
-    #     const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
-    #     element.addEventListener("input", function(event) {{
-    #         let value = event.target.value;
-    #         if (!value.match(/^[\\w.-]+@[\\w.-]+\\.[A-Za-z]+$/)) {{
-    #             event.target.setCustomValidity("Invalid email format");
-    #         }} else {{
-    #             event.target.setCustomValidity("");
-    #         }}
-    #     }});
-    #     """
-    # elif isinstance(field, models.TextField):
-    #     max_length = field.max_length if field.max_length else 10000
-    #     input_validation_js = f"""
-    #     document.querySelector("#{element_id}").maxLength = {max_length};
-    #     """
-    # elif isinstance(field, (models.PositiveIntegerField, models.PositiveBigIntegerField)):
-    #     input_validation_js = f"""
-    #     const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
-    #     element.addEventListener("input", function(event) {{
-    #         let value = event.target.value;
-    #         if (value && (isNaN(value) || value < 0)) {{
-    #             event.target.value = value.replace(/[^0-9]/g, '');  // Only allow positive integers
-    #         }}
-    #     }});
-    #     """
-    # elif isinstance(field, models.CharField):
-    #     max_length = field.max_length
-    #     input_validation_js = f"""
-    #     const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
-    #     element.maxLength = {max_length};
-    #     """
-    # elif isinstance(field, models.BinaryField):
-    #     input_validation_js = ""
+    if isinstance(field, models.IntegerField):
+        input_validation_js = f"""
+        const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
+        element.addEventListener("input", function(event) {{
+            let value = event.target.value;
+            event.target.value = value.replace(/[^-0-9]/g, '');  // Allow integers, including negative
+        }});
+        """
+    elif isinstance(field, (models.DecimalField, models.FloatField)):
+        input_validation_js = f"""
+        const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
+        element.addEventListener("input", function(event) {{
+            let value = event.target.value;
+            event.target.value = value.replace(/[^-0-9.]/g, '');  // Allow decimal numbers
+        }});
+        """
+    elif isinstance(field, models.BooleanField):
+        input_validation_js = ""
+    elif isinstance(field, models.EmailField):
+        input_validation_js = f"""
+        const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
+        element.addEventListener("input", function(event) {{
+            let value = event.target.value;
+            if (!value.match(/^[\\w.-]+@[\\w.-]+\\.[A-Za-z]+$/)) {{
+                event.target.setCustomValidity("Invalid email format");
+            }} else {{
+                event.target.setCustomValidity("");
+            }}
+        }});
+        """
+    elif isinstance(field, models.TextField):
+        max_length = field.max_length if field.max_length else 10000
+        input_validation_js = f"""
+        document.querySelector("#{element_id}").maxLength = {max_length};
+        """
+    elif isinstance(field, (models.PositiveIntegerField, models.PositiveBigIntegerField)):
+        input_validation_js = f"""
+        const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
+        element.addEventListener("input", function(event) {{
+            let value = event.target.value;
+            if (value && (isNaN(value) || value < 0)) {{
+                event.target.value = value.replace(/[^0-9]/g, '');  // Only allow positive integers
+            }}
+        }});
+        """
+    elif isinstance(field, models.CharField):
+        max_length = field.max_length
+        input_validation_js = f"""
+        const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
+        element.maxLength = {max_length};
+        """
+    elif isinstance(field, models.BinaryField):
+        input_validation_js = ""
 
     def fetch_initial_data():
         url = f'{host}{api_endpoint}/{app_label}/{model_name}/{object_id}/{field_name}'
@@ -146,6 +146,7 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
                         eventSource.close();
                     }}
                 }});
+                {input_validation_js}
             }});
         </script>
     """)
