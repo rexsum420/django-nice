@@ -4,86 +4,52 @@ from .config import Config
 from django.apps import apps
 from django.db import models
 
-def bind_element_to_model(element, app_label, model_name, object_id, field_name, element_id, property_name='value'):
+def bind_element_to_model(element, app_label, model_name, object_id=None, fields=None, element_id=None, 
+                          property_name='value', dynamic_query=None):
+    if fields is None or not isinstance(fields, list):
+        return  # Fail gracefully if no fields are provided
+    
     host = Config.get_host()
     api_endpoint = Config.get_api_endpoint()
     model = apps.get_model(app_label, model_name)
-    field = model._meta.get_field(field_name)
     
-    # Getting ready to add input validation
+    # Use dynamic queries (e.g., find by user ID or high score) if provided
+    if dynamic_query:
+        instance = model.objects.filter(**dynamic_query).first()
+        if instance:
+            object_id = instance.pk
+        else:
+            return  # No instance found for the dynamic query
     
-    input_validation_js = ""
+    if not object_id:
+        return  # Fail gracefully if object_id is still None
     
-    if isinstance(field, models.IntegerField):
-        input_validation_js = f"""
-        const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
-        element.addEventListener("input", function(event) {{
-            let value = event.target.value;
-            event.target.value = value.replace(/[^-0-9]/g, '');  // Allow integers, including negative
-        }});
-        """
-    elif isinstance(field, (models.DecimalField, models.FloatField)):
-        input_validation_js = f"""
-        const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
-        element.addEventListener("input", function(event) {{
-            let value = event.target.value;
-            event.target.value = value.replace(/[^-0-9.]/g, '');  // Allow decimal numbers
-        }});
-        """
-    elif isinstance(field, models.BooleanField):
-        input_validation_js = ""
-    elif isinstance(field, models.EmailField):
-        input_validation_js = f"""
-        const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
-        element.addEventListener("input", function(event) {{
-            let value = event.target.value;
-            if (!value.match(/^[\\w.-]+@[\\w.-]+\\.[A-Za-z]+$/)) {{
-                event.target.setCustomValidity("Invalid email format");
-            }} else {{
-                event.target.setCustomValidity("");
-            }}
-        }});
-        """
-    elif isinstance(field, models.TextField):
-        max_length = field.max_length if field.max_length else 10000
-        input_validation_js = f"""
-        document.querySelector("#{element_id}").maxLength = {max_length};
-        """
-    elif isinstance(field, (models.PositiveIntegerField, models.PositiveBigIntegerField)):
-        input_validation_js = f"""
-        const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
-        element.addEventListener("input", function(event) {{
-            let value = event.target.value;
-            if (value && (isNaN(value) || value < 0)) {{
-                event.target.value = value.replace(/[^0-9]/g, '');  // Only allow positive integers
-            }}
-        }});
-        """
-    elif isinstance(field, models.CharField):
-        max_length = field.max_length
-        input_validation_js = f"""
-        const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]')
-        element.maxLength = {max_length};
-        """
-    elif isinstance(field, models.BinaryField):
-        input_validation_js = ""
-
+    # Fetch initial data for all fields
     def fetch_initial_data():
-        url = f'{host}{api_endpoint}/{app_label}/{model_name}/{object_id}/{field_name}'
-        response = requests.get(url)
-        if response.status_code == 200:
-            return response.json().get(field_name, '')
-        return ''
+        data = {}
+        for field_name in fields:
+            url = f'{host}{api_endpoint}/{app_label}/{model_name}/{object_id}/{field_name}'
+            response = requests.get(url)
+            if response.status_code == 200:
+                data[field_name] = response.json().get(field_name, '')
+            else:
+                data[field_name] = ''
+        return data
 
-    def update_data(value):
+    # Update data for a specific field
+    def update_data(field_name, value):
         if value is None or value == '':
             pass
         else:
             url = f'{host}{api_endpoint}/{app_label}/{model_name}/{object_id}/{field_name}/'
-            response = requests.post(url, json={field_name: value})
+            requests.post(url, json={field_name: value})
 
-    setattr(element, property_name, fetch_initial_data())
+    # Initialize the element with combined data from all fields
+    initial_data = fetch_initial_data()
+    combined_data = ', '.join([f'{field}: {initial_data[field]}' for field in fields])
+    setattr(element, property_name, combined_data)
 
+    # Listener events based on the element type
     if isinstance(element, ui.input):
         listener_event = 'update:model-value'
         element_tag = 'input'
@@ -103,50 +69,60 @@ def bind_element_to_model(element, app_label, model_name, object_id, field_name,
         listener_event = f'update:model-{property_name}'
         element_tag = '*'
 
+    # Handle frontend changes by updating the respective field in the model
     def on_frontend_change(e):
-        new_value = ''.join(e.args)
-        update_data(new_value)
+        new_value = ''.join(e.args).split(', ')
+        field_values = {field: value for field, value in zip(fields, new_value)}
+        for field_name, value in field_values.items():
+            update_data(field_name, value)
 
     element.on(listener_event, on_frontend_change)
     
     element.props(f'class=model-element-class id={element_id}')
 
-    def set_value_in_element(new_value):
-        element.set_value(new_value)
+    # Set up Server-Sent Events (SSE) to update the element when any field changes
+    def set_value_in_element(new_data):
+        combined_data = ', '.join([f'{field}: {new_data[field]}' for field in fields])
+        element.set_value(combined_data)
 
-    sse_url = f'{host}{api_endpoint}/sse/{app_label}/{model_name}/{object_id}/{field_name}/'
-    ui.add_body_html(f"""
-        <script>
-            document.addEventListener("DOMContentLoaded", function() {{
-                let eventSource = new EventSource("{sse_url}");
+    for field_name in fields:
+        sse_url = f'{host}{api_endpoint}/sse/{app_label}/{model_name}/{object_id}/{field_name}/'
+        ui.add_body_html(f"""
+            <script>
+                document.addEventListener("DOMContentLoaded", function() {{
+                    let eventSource = new EventSource("{sse_url}");
 
-                eventSource.onmessage = function(event) {{
-                    const newValue = event.data;
-                    const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]');
+                    eventSource.onmessage = function(event) {{
+                        const newValue = event.data;
+                        const element = document.querySelector('.model-element-class {element_tag}[list="{element_id}-datalist"]');
 
-                    if (element) {{
-                        if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.tagName === 'SELECT') {{
-                            element.value = newValue;
-                        }} else if (element.tagName === 'BUTTON') {{
-                            element.textContent = newValue;
+                        if (element) {{
+                            let current_value = element.value || element.textContent;
+                            let new_field_data = '{field_name}: ' + newValue;
+
+                            if (current_value.includes('{field_name}:')) {{
+                                // Replace only the specific field value
+                                const updated_value = current_value.replace(new RegExp('{field_name}:.*?(,|$)'), new_field_data + '$1');
+                                element.value = updated_value;
+                            }} else {{
+                                // Append if field data doesn't exist
+                                element.value += ', ' + new_field_data;
+                            }}
                         }} else {{
-                            element.textContent = newValue;
+                            console.error("Element with ID", '{element_id}', "not found in the class list.");
                         }}
-                    }} else {{
-                        console.error("Element with ID", '{element_id}', "not found in the class list.");
-                    }}
-                }};
+                    }};
 
-                eventSource.onerror = function(error) {{
-                    console.error("SSE connection error:", error);
-                }};
+                    eventSource.onerror = function(error) {{
+                        console.error("SSE connection error:", error);
+                    }};
 
-                window.addEventListener('beforeunload', function() {{
-                    if (eventSource) {{
-                        eventSource.close();
-                    }}
+                    window.addEventListener('beforeunload', function() {{
+                        if (eventSource) {{
+                            eventSource.close();
+                        }}
+                    }});
                 }});
-                {input_validation_js}
-            }});
-        </script>
-    """)
+            </script>
+        """)
+
