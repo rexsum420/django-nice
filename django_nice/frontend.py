@@ -1,17 +1,17 @@
 from nicegui import ui
 import requests
 from .config import Config
-from django.apps import apps
-from django.db import models
+from django.utils.decorators import sync_and_async_middleware
 
+@sync_and_async_middleware
 def bind_element_to_model(element, app_label, model_name, object_id=None, fields=None, element_id=None, 
                           property_name='value', dynamic_query=None):
     if fields is None or not isinstance(fields, list):
-        return  # Fail gracefully if no fields are provided
+        return
     
     host = Config.get_host()
     api_endpoint = Config.get_api_endpoint()
-    model = apps.get_model(app_label, model_name)
+    model = Config.get_model(app_label, model_name)
     
     # Use dynamic queries (e.g., find by user ID or high score) if provided
     if dynamic_query:

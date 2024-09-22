@@ -9,7 +9,7 @@ def register_signals_dynamically(app_label, model_name):
     for app in apps.get_app_configs():
         if apps.is_installed(app_label):
             model = apps.get_model(app_label, model_name)
-            setup_signals(app_label, model_name, model_update_signal)
+            setup_signals(app_label, model, model_update_signal)
 
 class Config:
     _instance = None
@@ -19,11 +19,8 @@ class Config:
             cls._instance = super(Config, cls).__new__(cls)
             cls._instance.host = 'http://127.0.0.1:8000'
             cls._instance.api_endpoint = '/api'
-
-            # Set up Django environment variables dynamically
             cls.setup_django_environment()
 
-            # Initialize Django (ensure models are ready)
             django.setup()
 
         return cls._instance
@@ -31,7 +28,6 @@ class Config:
     @classmethod
     def setup_django_environment(cls):
         """Dynamically configure Django environment variables."""
-        # If DJANGO_SETTINGS_MODULE is not set, attempt to configure dynamically
         if not os.getenv('DJANGO_SETTINGS_MODULE'):
             project_settings = cls._find_django_settings()
             if project_settings:
@@ -48,13 +44,9 @@ class Config:
     @classmethod
     def _find_django_settings(cls):
         """Attempt to dynamically find the Django settings module."""
-        # Look for a potential settings module in the environment or context
         possible_settings = [
-            # Attempt to retrieve from known environment variable patterns
             os.getenv('DJANGO_SETTINGS_MODULE'),
-            # Additional fallback methods can be implemented here if needed
         ]
-        # Return the first valid settings module found, or None if none found
         for settings_module in possible_settings:
             if settings_module:
                 return settings_module
@@ -73,6 +65,10 @@ class Config:
     @classmethod
     def get_api_endpoint(cls):
         return cls._instance.api_endpoint
+    
+    @classmethod
+    def get_model(cls, app_label, model_name):
+        return apps.get_model(app_label, model_name)
 
     @classmethod
     def add_urls_to_project(cls, urlpatterns, app_label, model_name, field_name, object_id):

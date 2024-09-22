@@ -24,6 +24,5 @@ def model_update_signal(sender, instance, **kwargs):
             SSEManager.notify_listeners(sender.__name__, instance.pk, field_name, new_value)
 
 
-def setup_signals(app_label, model_name, signal_handler):
-    model = apps.get_model(app_label, model_name)
+def setup_signals(app_label, model, signal_handler):
     post_save.connect(signal_handler, sender=model)
