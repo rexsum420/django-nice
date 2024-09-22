@@ -1,7 +1,9 @@
-from .urls import register_endpoints
-from .signals import model_update_signal, setup_signals
+import os
+import django
 from django.apps import apps
 from django.db.models.signals import post_save
+from .urls import register_endpoints
+from .signals import model_update_signal, setup_signals
 
 def register_signals_dynamically(app_label, model_name):
     for app in apps.get_app_configs():
@@ -17,7 +19,46 @@ class Config:
             cls._instance = super(Config, cls).__new__(cls)
             cls._instance.host = 'http://127.0.0.1:8000'
             cls._instance.api_endpoint = '/api'
+
+            # Set up Django environment variables dynamically
+            cls.setup_django_environment()
+
+            # Initialize Django (ensure models are ready)
+            django.setup()
+
         return cls._instance
+
+    @classmethod
+    def setup_django_environment(cls):
+        """Dynamically configure Django environment variables."""
+        # If DJANGO_SETTINGS_MODULE is not set, attempt to configure dynamically
+        if not os.getenv('DJANGO_SETTINGS_MODULE'):
+            project_settings = cls._find_django_settings()
+            if project_settings:
+                os.environ.setdefault('DJANGO_SETTINGS_MODULE', project_settings)
+            else:
+                raise RuntimeError(
+                    "DJANGO_SETTINGS_MODULE is not set, and the settings module could not be dynamically determined."
+                )
+        
+        # Ensure apps are ready before proceeding
+        if not apps.ready:
+            django.setup()
+
+    @classmethod
+    def _find_django_settings(cls):
+        """Attempt to dynamically find the Django settings module."""
+        # Look for a potential settings module in the environment or context
+        possible_settings = [
+            # Attempt to retrieve from known environment variable patterns
+            os.getenv('DJANGO_SETTINGS_MODULE'),
+            # Additional fallback methods can be implemented here if needed
+        ]
+        # Return the first valid settings module found, or None if none found
+        for settings_module in possible_settings:
+            if settings_module:
+                return settings_module
+        return None
 
     @classmethod
     def configure(cls, host, api_endpoint='/api'):
@@ -43,4 +84,5 @@ class Config:
         post_save.connect(model_update_signal, sender=model)
         register_signals_dynamically(app_label, model_name)
         urlpatterns += register_endpoints(app_label, model_name, field_name, object_id, api_endpoint)
+
         
