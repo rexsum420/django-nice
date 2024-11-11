@@ -44,7 +44,7 @@ from nicegui import ui
 from django_nice.frontend import bind_element_to_model
 from django_nice.config import Config
 
-Config.configure(host='http://127.0.0.1:8000', api_endpoint='/api')
+Config.configure(host='http://127.0.0.1:8000', api_endpoint='/api') # By default `require_auth` is set to True
 
 @ui.page('/')
 def index():
@@ -56,6 +56,7 @@ def index():
         object_id=1,
         fields=['data_to_display'],
         element_id='bound_input'
+        # token= [The User's token to match]
     )
 
 ui.run(host='127.0.0.1', port=8080)
@@ -75,8 +76,14 @@ Defining a property of the element is also possible but optional. here's how you
         field_name='data_to_display'
         element_id='bound_markdown',
         property_name='content'
+        # token= [The User's token to match]
     )
 ```
+
+### Authentication
+
+It is required that your User model has a field `token` in JWT.
+You need to pass to the `bind_element_to_model` the token of the user.
 
 ### Full walkthrough to setup
 To get started, follow these steps:

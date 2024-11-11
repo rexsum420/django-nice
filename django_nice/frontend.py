@@ -5,14 +5,18 @@ from django.utils.decorators import sync_and_async_middleware
 
 @sync_and_async_middleware
 def bind_element_to_model(element, app_label, model_name, object_id=None, fields=None, element_id=None, 
-                          property_name='value', dynamic_query=None):
+                          property_name='value', dynamic_query=None, token=None):
     if fields is None or not isinstance(fields, list):
         return
-    
+
     host = Config.get_host()
     api_endpoint = Config.get_api_endpoint()
     model = Config.get_model(app_label, model_name)
-    
+
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+
     # Use dynamic queries (e.g., find by user ID or high score) if provided
     if dynamic_query:
         instance = model.objects.filter(**dynamic_query).first()
@@ -29,10 +33,11 @@ def bind_element_to_model(element, app_label, model_name, object_id=None, fields
         data = {}
         for field_name in fields:
             url = f'{host}{api_endpoint}/{app_label}/{model_name}/{object_id}/{field_name}'
-            response = requests.get(url)
+            response = requests.get(url, headers=headers)
             if response.status_code == 200:
                 data[field_name] = response.json().get(field_name, '')
             else:
+                print("There was an error with the request " + url + " with status " + response.status_code)
                 data[field_name] = ''
         return data
 
@@ -42,11 +47,11 @@ def bind_element_to_model(element, app_label, model_name, object_id=None, fields
             pass
         else:
             url = f'{host}{api_endpoint}/{app_label}/{model_name}/{object_id}/{field_name}/'
-            requests.post(url, json={field_name: value})
+            requests.post(url, json={field_name: value}, headers=headers)
 
     # Initialize the element with combined data from all fields
     initial_data = fetch_initial_data()
-    combined_data = ', '.join([f'{field}: {initial_data[field]}' for field in fields])
+    combined_data = ', '.join([initial_data[field] for field in fields])
     setattr(element, property_name, combined_data)
 
     # Listener events based on the element type
@@ -77,7 +82,6 @@ def bind_element_to_model(element, app_label, model_name, object_id=None, fields
             update_data(field_name, value)
 
     element.on(listener_event, on_frontend_change)
-    
     element.props(f'class=model-element-class id={element_id}')
 
     # Set up Server-Sent Events (SSE) to update the element when any field changes
@@ -98,16 +102,8 @@ def bind_element_to_model(element, app_label, model_name, object_id=None, fields
 
                         if (element) {{
                             let current_value = element.value || element.textContent;
-                            let new_field_data = '{field_name}: ' + newValue;
 
-                            if (current_value.includes('{field_name}:')) {{
-                                // Replace only the specific field value
-                                const updated_value = current_value.replace(new RegExp('{field_name}:.*?(,|$)'), new_field_data + '$1');
-                                element.value = updated_value;
-                            }} else {{
-                                // Append if field data doesn't exist
-                                element.value += ', ' + new_field_data;
-                            }}
+                            element.value = current_value;
                         }} else {{
                             console.error("Element with ID", '{element_id}', "not found in the class list.");
                         }}

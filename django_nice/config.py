@@ -5,13 +5,11 @@ from django.db.models.signals import post_save
 from .urls import register_endpoints
 from .signals import model_update_signal, setup_signals
 
-
 def register_signals_dynamically(app_label, model_name):
     for app in apps.get_app_configs():
         if apps.is_installed(app_label):
             model = apps.get_model(app_label, model_name)
             setup_signals(app_label, model, model_update_signal)
-
 
 class Config:
     _instance = None
@@ -21,6 +19,7 @@ class Config:
             cls._instance = super(Config, cls).__new__(cls)
             cls._instance.host = 'http://127.0.0.1:8000'
             cls._instance.api_endpoint = '/api'
+            cls._instance.require_auth = True
             cls.setup_django_environment()
 
             django.setup()
@@ -38,7 +37,7 @@ class Config:
                 raise RuntimeError(
                     "DJANGO_SETTINGS_MODULE is not set, and the settings module could not be dynamically determined."
                 )
-
+        
         # Ensure apps are ready before proceeding
         if not apps.ready:
             django.setup()
@@ -55,10 +54,12 @@ class Config:
         return None
 
     @classmethod
-    def configure(cls, host, api_endpoint='/api'):
+    def configure(cls, host, api_endpoint='/api', require_auth=True):
         config = cls() or cls()._instance
         config.host = host.rstrip('/')
         config.api_endpoint = api_endpoint.rstrip('/')
+        config.require_auth = require_auth
+        return cls
 
     @classmethod
     def get_host(cls):
@@ -67,10 +68,14 @@ class Config:
     @classmethod
     def get_api_endpoint(cls):
         return cls._instance.api_endpoint
-
+    
     @classmethod
     def get_model(cls, app_label, model_name):
         return apps.get_model(app_label, model_name)
+
+    @classmethod
+    def get_auth(cls):
+        return cls._instance.require_auth
 
     @classmethod
     def add_urls_to_project(cls, urlpatterns, app_label, model_name):
@@ -78,10 +83,10 @@ class Config:
             api_endpoint = cls._instance.get_api_endpoint()
         except:
             api_endpoint = 'api'
-
+        
         # Use the get_model method from the class
         model = cls.get_model(app_label, model_name)
-
+        
         post_save.connect(model_update_signal, sender=model)
         register_signals_dynamically(app_label, model_name)
-        urlpatterns += register_endpoints(app_label, model_name, api_endpoint)
+        urlpatterns += register_endpoints(app_label, model_name, api_endpoint, cls.get_auth())
