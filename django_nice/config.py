@@ -19,6 +19,7 @@ class Config:
             cls._instance = super(Config, cls).__new__(cls)
             cls._instance.host = 'http://127.0.0.1:8000'
             cls._instance.api_endpoint = '/api'
+            cls._instance.require_auth = True
             cls.setup_django_environment()
 
             django.setup()
@@ -53,10 +54,12 @@ class Config:
         return None
 
     @classmethod
-    def configure(cls, host, api_endpoint='/api'):
-        config = cls._instance or cls()
-        config.host = host.rstrip('/')  
-        config.api_endpoint = api_endpoint.rstrip('/') 
+    def configure(cls, host, api_endpoint='/api', require_auth=True):
+        config = cls() or cls()._instance
+        config.host = host.rstrip('/')
+        config.api_endpoint = api_endpoint.rstrip('/')
+        config.require_auth = require_auth
+        return cls
 
     @classmethod
     def get_host(cls):
@@ -71,14 +74,19 @@ class Config:
         return apps.get_model(app_label, model_name)
 
     @classmethod
-    def add_urls_to_project(cls, urlpatterns, app_label, model_name, field_name, object_id):
+    def get_auth(cls):
+        return cls._instance.require_auth
+
+    @classmethod
+    def add_urls_to_project(cls, urlpatterns, app_label, model_name):
         try:
             api_endpoint = cls._instance.get_api_endpoint()
         except:
             api_endpoint = 'api'
-        model = apps.get_model(app_label, model_name)
+        
+        # Use the get_model method from the class
+        model = cls.get_model(app_label, model_name)
+        
         post_save.connect(model_update_signal, sender=model)
         register_signals_dynamically(app_label, model_name)
-        urlpatterns += register_endpoints(app_label, model_name, field_name, object_id, api_endpoint)
-
-        
+        urlpatterns += register_endpoints(app_label, model_name, api_endpoint, cls.get_auth())

@@ -31,9 +31,7 @@ from django_nice.config import Config
 Config.add_urls_to_project(
     urlpatterns, 
     app_label='myapp', 
-    model_name='DataModel', 
-    field_name='data_to_display', 
-    object_id=1
+    model_name='DataModel'
 )
 ```
 
@@ -46,7 +44,7 @@ from nicegui import ui
 from django_nice.frontend import bind_element_to_model
 from django_nice.config import Config
 
-Config.configure(host='http://127.0.0.1:8000', api_endpoint='/api')
+Config.configure(host='http://127.0.0.1:8000', api_endpoint='/api') # By default `require_auth` is set to True
 
 @ui.page('/')
 def index():
@@ -56,8 +54,9 @@ def index():
         app_label='myapp',
         model_name='DataModel',
         object_id=1,
-        field_name='data_to_display',
+        fields=['data_to_display'],
         element_id='bound_input'
+        # token= [The User's token to match]
     )
 
 ui.run(host='127.0.0.1', port=8080)
@@ -77,8 +76,14 @@ Defining a property of the element is also possible but optional. here's how you
         field_name='data_to_display'
         element_id='bound_markdown',
         property_name='content'
+        # token= [The User's token to match]
     )
 ```
+
+### Authentication
+
+It is required that your User model has a field `token` in JWT.
+You need to pass to the `bind_element_to_model` the token of the user.
 
 ### Full walkthrough to setup
 To get started, follow these steps:
@@ -97,6 +102,14 @@ Collecting django...
 (venv)$ django-admin startproject demo . 
 
 (venv)$ ./manage.py startapp people
+```
+
+In your env file add, otherwise you can't use Django inside Nicegui:
+
+```
+DJANGO_SETTINGS_MODULE=app_name.settings
+
+NICEGUI_STORAGE_SECRETKEY=your-key
 ```
 
 ## Define a model:
@@ -130,6 +143,8 @@ from nicegui import ui
 from django_nice.frontend import bind_element_to_model
 from people.models import Person
 from django_nice.config import Config
+import os
+load_dotenv()
 
 Config.configure(host='http://127.0.0.1:8000', api_endpoint='/api')
 
@@ -141,11 +156,11 @@ def index():
         app_label='people',
         model_name='Person',
         object_id=1,
-        field_name='first_name',
+        fields=['first_name'],
         element_id='firstName'
     )
 
-ui.run(host='127.0.0.1', port=8080)
+ui.run(host='127.0.0.1', port=8080, storage_secret=os.getenv("NICEGUI_STORAGE_SECRETKEY"))
 ```
 
 ## inside of demo.urls:
@@ -163,9 +178,7 @@ urlpatterns = [
 Config.add_urls_to_project(
     urlpatterns,
     app_label='people',
-    model_name='Person',
-    field_name='first_name',
-    object_id=1
+    model_name='Person'
 )
 ```
 
@@ -198,7 +211,7 @@ INSTALLED_APPS = [
    'people'
    'corsheaders'
 ]
-MIDDLEWEAR = [
+MIDDLEWARE = [
 'corsheaders.middleware.CorsMiddleware', 
 ]
 CORS_ALLOW_ALL_ORIGINS = True
