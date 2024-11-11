@@ -4,11 +4,11 @@
 
 ## Why Use django-nice?
 
-When working with Django and NiceGUI, binding frontend elements directly to Django models in a dynamic, real-time manner can be challenging. Out-of-the-box integrations often rely on manual updates, polling, or heavy reliance on traditional forms, which can be slow or cumbersome for modern web applications that require seamless real-time interactions.
+When working with Django and NiceGUI, binding frontend elements directly to Django models in a dynamic, real-time manner can be challenging. Out-of-the-box integrations often rely on manual updates, polling, or heavy reliance on traditional forms, which can be slow or cumbersome for web applications that require seamless real-time interactions.
 
 `django-nice` solves these challenges by:
 
-1. **Real-Time Sync with SSE**: The library leverages **Server-Sent Events (SSE)** to keep the frontend NiceGUI elements in sync with the backend Django models in real-time. Whenever the backend data changes, the frontend is updated immediately without needing to refresh or manually poll.
+1. **Real-Time Sync with SSE**: The library leverages **Server-Sent Events (SSE)** to keep the frontend NiceGUI elements in sync with the backend Django models in real-time. When the backend data changes, the frontend is updated immediately without needing to refresh or manually poll.
 
 2. **Bidirectional Data Binding**: The library allows changes in the frontend to automatically update the corresponding Django model, and vice versa. This ensures consistency between the client and the server.
 
@@ -16,7 +16,7 @@ When working with Django and NiceGUI, binding frontend elements directly to Djan
 
 ### Advantages Over Regular Django-NiceGUI Integration:
 
-- **Real-Time Updates**: Standard Django-NiceGUI integration doesn’t automatically sync data between the frontend and backend in real-time. `django-nice` provides automatic updates through SSE, allowing the frontend to reflect changes as soon as they happen in the backend.
+- **Real-Time Updates**: Typical Django-NiceGUI integrations doesn’t provide automatic real-time syncing data between the frontend and backend in real-time. `django-nice` provides automatic updates through SSE, allowing the frontend to reflect changes as soon as they happen in the backend.
 - **Effortless Binding**: Instead of manually writing JavaScript, forms, or custom API calls to keep frontend elements in sync with Django models, `django-nice` handles this for you with minimal configuration.
 - **Improved User Experience**: By offering real-time data updates, the library enhances the responsiveness of your NiceGUI app, creating a smoother and more interactive user experience.
 
@@ -38,9 +38,9 @@ MIDDLEWARE = [
 CORS_ALLOW_ALL_ORIGINS = True
 ```
 
-Yes don't forget to install also `corsheaders` package.
+Remember to install the `corsheaders` package as well.
 
-### 1.1 Define the model endpoints inside Django
+### 1.1 Define Model Endpoints in Django
 
 ```python
 from django_nice.config import Config
@@ -58,16 +58,16 @@ config = Config.configure(
 config.add_urls_to_project(urlpatterns, app_label="your-app", model_name="User")
 ```
 
-### 1.2 Create a custom user model
+### 1.2 Customize the User Model
 
-As we need for login a new parameter that is saved as field inside the Django User model we need a custom User model to be able to do that.
-Just follows a tutorial for this, like [this one](https://testdriven.io/blog/django-custom-user-model/) and add a new parameter like:
+A custom User model is required to add a token field for authentication.  
+Follow a tutorial like [this one](https://testdriven.io/blog/django-custom-user-model/) and add a `token` field:
 
 ```python
 token = models.CharField(max_length=65, unique=True)
 ```
 
-### 1.3 Add `.env` variables
+### 1.3 Set Up Environment Variables
 
 ```
 DJANGO_SETTINGS_MODULE=your-app.settings
@@ -82,10 +82,10 @@ NICEGUI_PORT="8080"
 
 ### 2. Create NiceGUI server
 
-Consider that you can organize as you prefer this application but for this tutorial it will be just one NiceGUI file that include also the Login system.
+Organize the NiceGUI server as needed; in this tutorial, we’ll use a single NiceGUI file with login and model-binding functionality.
 Copy that content and create a file inside the root folder where is your `urls.py` file, call it as example `frontend.py`.
 
-PS: check the code comments that explain some things.
+Refer to inline comments for explanations.
 
 ```python
 #!usr/bin/env python
