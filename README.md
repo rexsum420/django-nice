@@ -63,7 +63,7 @@ config.add_urls_to_project(urlpatterns, app_label="your-app", model_name="User")
 As we need for login a new parameter that is saved as field inside the Django User model we need a custom User model to be able to do that.
 Just follows a tutorial for this, like [this one](https://testdriven.io/blog/django-custom-user-model/) and add a new parameter like:
 
-```
+```python
 token = models.CharField(max_length=65, unique=True)
 ```
 
@@ -87,7 +87,7 @@ Copy that content and create a file inside the root folder where is your `urls.p
 
 PS: check the code comments that explain some things.
 
-```
+```python
 #!usr/bin/env python
 import binascii
 import os
